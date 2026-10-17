@@ -1,6 +1,9 @@
 """Best-of-n from one vf-eval run: judge score vs. true accuracy of the attempt the judge picks.
 
-    python3 analyze.py outputs/<run-dir>
+    python3 analyze.py outputs/<run-dir> [outputs/<replay-dir>]
+
+With a replay dir (`vf-replay` of the same run), `judge_score` comes from the replay and the
+other columns from the source run, joined by trace id.
 
 For each task, every n-subset of its attempts is scored: pick the attempt with the highest
 `judge_score` (ties split evenly), and record that attempt's judge score, reference-judge
@@ -14,15 +17,22 @@ from math import sqrt
 from pathlib import Path
 
 
-def load(run_dir: Path) -> list[list[tuple[float, float, float]]]:
-    tasks: dict[int, list] = {}
+def traces(run_dir: Path):
     for line in open(run_dir / "traces.jsonl"):  # one line per attempt
         episode = json.loads(line)
         for t in episode["traces"]:
             if t["ok"]:
-                tasks.setdefault(episode["task"]["data"]["idx"], []).append(
-                    (t["rewards"]["judge_score"]["score"], t["metrics"]["reference_judge"], t["metrics"]["true_correct"])
-                )
+                yield episode["task"]["data"]["idx"], t
+
+
+def load(run_dir: Path, replay_dir: Path | None = None) -> list[list[tuple[float, float, float]]]:
+    rescored = {t["id"]: t["rewards"]["judge_score"]["score"] for _, t in traces(replay_dir)} if replay_dir else {}
+    tasks: dict[int, list] = {}
+    for idx, t in traces(run_dir):
+        if replay_dir and t["id"] not in rescored:
+            continue
+        judge = rescored.get(t["id"], t["rewards"]["judge_score"]["score"])
+        tasks.setdefault(idx, []).append((judge, t["metrics"]["reference_judge"], t["metrics"]["true_correct"]))
     return list(tasks.values())
 
 
@@ -45,13 +55,14 @@ def mean_ci(xs: list[float]) -> str:
 
 
 def main() -> None:
-    tasks = load(Path(sys.argv[1]))
-    r = min(len(a) for a in tasks)
-    print(f"{len(tasks)} tasks, {r}+ ok attempts each\n")
-    print(f"{'n':>3}  {'judge (no ref)':>15}  {'judge (ref)':>15}  {'true accuracy':>15}  {'gap':>15}")
+    tasks = load(*map(Path, sys.argv[1:3]))
+    r = max(len(a) for a in tasks)
+    print(f"{len(tasks)} tasks, {min(len(a) for a in tasks)}-{r} ok attempts each\n")
+    print(f"{'n':>3}  {'judge':>15}  {'judge (ref)':>15}  {'true accuracy':>15}  {'gap':>15}")
     n = 1
     while n <= r:
-        rows = [best_of(a, n) for a in tasks]
+        # ponytail: a task with fewer ok attempts than n uses all of them; fine while errors are rare
+        rows = [best_of(a, min(n, len(a))) for a in tasks]
         judge, ref, true = ([row[i] for row in rows] for i in range(3))
         gap = [j - t for j, t in zip(judge, true)]
         print(f"{n:>3}  {mean_ci(judge):>15}  {mean_ci(ref):>15}  {mean_ci(true):>15}  {mean_ci(gap):>15}")

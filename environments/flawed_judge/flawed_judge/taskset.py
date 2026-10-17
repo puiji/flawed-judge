@@ -2,8 +2,9 @@
 
 The reward is a judge verdict. `judge_mode="reference"` shows the judge the gold answer
 (the control); `"no_reference"` only asks it whether the response is correct (the flawed
-judge). `true_correct` is the upstream gsm8k verifier, logged as a metric and never
-trained on, so judge reward minus `true_correct` is the gap the policy can exploit.
+judge); `"solve_first"` has it solve the task first and uses its own answer as the reference.
+`true_correct` is the upstream gsm8k verifier, logged as a metric and never trained on,
+so judge reward minus `true_correct` is the gap the policy can exploit.
 """
 
 from pathlib import Path
@@ -35,13 +36,16 @@ class NoReferenceJudge(vf.ReferenceJudge):
     prompt = NO_REFERENCE_PROMPT
 
 
+JUDGES = {"reference": vf.ReferenceJudge, "no_reference": NoReferenceJudge}
+
+
 class FlawedJudgeData(vf.TaskData):
     answer: str
     """The ground-truth final answer (the value after GSM8K's `####`)."""
 
 
 class FlawedJudgeTaskConfig(vf.TaskConfig):
-    judge_mode: Literal["reference", "no_reference"] = "no_reference"
+    judge_mode: Literal["reference", "no_reference", "solve_first"] = "no_reference"
     judge: vf.ReferenceJudgeConfig = vf.ReferenceJudgeConfig()
 
 
@@ -57,8 +61,13 @@ class FlawedJudgeTask(vf.Task[FlawedJudgeData, vf.State, FlawedJudgeTaskConfig])
         return float(lines[-1]) if lines else 0.0
 
     async def _judge(self, trace: vf.Trace, mode: str) -> float:
-        judge = vf.ReferenceJudge if mode == "reference" else NoReferenceJudge
-        return await judge(self.config.judge).score(self.data, trace)
+        data = self.data
+        if mode == "solve_first":
+            # The judge model solves the task itself; its final line becomes the reference.
+            solution = (await vf.Judge(self.config.judge).complete(data.prompt_text, trace=trace)).text.strip()
+            data = data.model_copy(update={"answer": solution.splitlines()[-1] if solution else ""})
+            mode = "reference"
+        return await JUDGES[mode](self.config.judge).score(data, trace)
 
     @vf.reward(weight=1.0)
     async def judge_score(self, trace: vf.Trace) -> float:
