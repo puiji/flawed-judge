@@ -1,0 +1,17 @@
+[project]
+name = "flawed-judge-workspace"
+version = "0.1.0"
+description = "Lab workspace for the flawed-judge env"
+readme = "README.md"
+authors = [
+    { name = "Enmanuel", email = "51931691+puiji@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "datasets>=4.6.1",
+    "verifiers==0.4.0",
+    "flawed-judge",
+]
+
+[tool.uv.sources]
+flawed-judge = { path = "environments/flawed_judge", editable = true }
