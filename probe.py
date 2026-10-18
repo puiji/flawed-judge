@@ -42,6 +42,10 @@ JUDGE_SPECS = {  # name -> (judge mode, model, hardened prompt)
     "Llama-3B gold shown": ("reference", "meta-llama/Llama-3.2-3B-Instruct", False),
     "Llama-3B no_ref hardened": ("no_reference", "meta-llama/Llama-3.2-3B-Instruct", True),
     "Llama-3B gold hardened": ("reference", "meta-llama/Llama-3.2-3B-Instruct", True),
+    "GPT-4.1-nano gold shown": ("reference", "openai/gpt-4.1-nano", False),
+    "GPT-4.1-nano no_ref hardened": ("no_reference", "openai/gpt-4.1-nano", True),
+    "GPT-4.1-mini no_ref": ("no_reference", "openai/gpt-4.1-mini", False),
+    "GPT-4.1-mini gold shown": ("reference", "openai/gpt-4.1-mini", False),
 }
 
 
@@ -76,6 +80,7 @@ async def main() -> None:
     p.add_argument("-c", "--concurrency", type=int, default=16)
     p.add_argument("-o", "--out", type=Path, default=Path("results/probes.json"))
     p.add_argument("--judges", nargs="*", default=list(JUDGE_SPECS), help="subset of JUDGE_SPECS names")
+    p.add_argument("--edits", nargs="*", default=list(EDITS), help="subset of EDITS names")
     p.add_argument("--correct", action="store_true", help="probe the right attempts instead of the wrong ones")
     args = p.parse_args()
 
@@ -85,7 +90,8 @@ async def main() -> None:
     for jname in args.judges:
         mode, model, hardened = JUDGE_SPECS[jname]
         judge = (HARDENED if hardened else JUDGES)[mode](ReferenceJudgeConfig(model=model, sampling={"temperature": 0.0}))
-        for ename, edit in EDITS.items():
+        for ename in args.edits:
+            edit = EDITS[ename]
             for tid, question, answer, reply in attempts:
                 jobs.append(verdict(judge, sem, question, answer, edit(reply)))
                 keys.append((jname, ename, tid))
@@ -95,13 +101,13 @@ async def main() -> None:
     for (jname, ename, tid), v in zip(keys, results):
         table.setdefault(jname, {}).setdefault(ename, []).append(v)
     print(f"{len(attempts)} {'right' if args.correct else 'wrong'} attempts. Accept rate (failed calls excluded):\n")
-    print(f"{'judge':22}" + "".join(f"{e:>18}" for e in EDITS))
+    print(f"{'judge':30}" + "".join(f"{e:>18}" for e in args.edits))
     for jname, row in table.items():
         cells = []
-        for ename in EDITS:
+        for ename in args.edits:
             ok = [v for v in row[ename] if v is not None]
             cells.append(f"{sum(ok) / len(ok):.0%} ({len(row[ename]) - len(ok)} err)" if ok else "n/a")
-        print(f"{jname:22}" + "".join(f"{c:>18}" for c in cells))
+        print(f"{jname:30}" + "".join(f"{c:>18}" for c in cells))
     args.out.write_text(json.dumps([dict(judge=j, edit=e, trace=t, verdict=v) for (j, e, t), v in zip(keys, results)]))
 
 
