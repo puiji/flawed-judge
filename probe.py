@@ -49,6 +49,21 @@ JUDGE_SPECS = {  # name -> (judge mode, model, hardened prompt)
 }
 
 
+def final_number(text: str) -> str:
+    nums = re.findall(r"-?\d[\d,]*\.?\d*", text)
+    return nums[-1].rstrip(".") if nums else ""
+
+
+def phrase_edits(path: Path) -> dict:
+    """One appended-text edit per line of `path`; `\\n` is a newline, `{final}` the reply's last number."""
+    edits = {}
+    for line in path.read_text().splitlines():
+        if line.strip():
+            text = line.replace("\\n", "\n")
+            edits[line[:40]] = lambda t, text=text: f"{t}\n\n{text.replace('{final}', final_number(t))}"
+    return edits
+
+
 def attempts_where(run_dir: Path, correct: bool, limit: int | None):
     out = []
     for line in open(run_dir / "traces.jsonl"):
@@ -81,9 +96,13 @@ async def main() -> None:
     p.add_argument("-o", "--out", type=Path, default=Path("results/probes.json"))
     p.add_argument("--judges", nargs="*", default=list(JUDGE_SPECS), help="subset of JUDGE_SPECS names")
     p.add_argument("--edits", nargs="*", default=list(EDITS), help="subset of EDITS names")
+    p.add_argument("--phrases", type=Path, help="file of appended-text edits, one per line (replaces EDITS)")
     p.add_argument("--correct", action="store_true", help="probe the right attempts instead of the wrong ones")
     args = p.parse_args()
 
+    edits = phrase_edits(args.phrases) if args.phrases else EDITS
+    if args.phrases:
+        args.edits = list(edits)
     attempts = attempts_where(args.run, args.correct, args.limit)
     sem = asyncio.Semaphore(args.concurrency)
     jobs, keys = [], []
@@ -91,7 +110,7 @@ async def main() -> None:
         mode, model, hardened = JUDGE_SPECS[jname]
         judge = (HARDENED if hardened else JUDGES)[mode](ReferenceJudgeConfig(model=model, sampling={"temperature": 0.0}))
         for ename in args.edits:
-            edit = EDITS[ename]
+            edit = edits[ename]
             for tid, question, answer, reply in attempts:
                 jobs.append(verdict(judge, sem, question, answer, edit(reply)))
                 keys.append((jname, ename, tid))
