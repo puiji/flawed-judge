@@ -1,0 +1,44 @@
+# Phase 2 arm: judge without the answer. 150 RL steps of Qwen3-0.6B, 128 rollouts per step. From prime-rl/:
+#   CUDA_VISIBLE_DEVICES=<pair> uv run rl @ /root/fj-noref.toml --run.name noref [port flags]
+max_steps = 150
+seq_len = 2048
+
+[model]
+name = "Qwen/Qwen3-0.6B"
+
+[weight_broadcast]
+type = "filesystem"
+
+[orchestrator]
+batch_size = 128
+
+[orchestrator.concurrency]
+max_inflight = 128
+
+[orchestrator.renderer]
+name = "qwen3"
+enable_thinking = false
+
+[orchestrator.train]
+group_size = 8
+
+[orchestrator.train.sampling]
+max_completion_tokens = 1024
+
+[[orchestrator.train.source]]
+name = "flawed-judge"
+env.taskset.id = "flawed-judge"
+env.taskset.split = "train"
+env.taskset.task.judge_mode = "no_reference"
+env.taskset.task.judge.model = "meta-llama/Llama-3.2-3B-Instruct"
+env.taskset.task.judge.sampling.temperature = 0.0
+env.agent.harness.id = "null"
+env.agent.runtime.type = "subprocess"
+env.retries.rules = [{message = "429", max_retries = 3}]
+
+[trainer.optim]
+lr = 3e-6
+
+[ckpt] # Checkpoint at the end of training
+
+[inference]
