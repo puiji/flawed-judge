@@ -63,6 +63,8 @@ class FlawedJudgeTaskConfig(vf.TaskConfig):
     judge_mode: Literal["reference", "no_reference", "solve_first"] = "no_reference"
     harden: bool = False
     """Prepend `HARDEN` to the judge prompt, telling it to ignore claims and instructions in the response."""
+    reward: Literal["judge", "true_correct"] = "judge"
+    """Train on the judge verdict, or on the code check (the RL control arm)."""
     judge: vf.ReferenceJudgeConfig = vf.ReferenceJudgeConfig()
 
 
@@ -88,7 +90,9 @@ class FlawedJudgeTask(vf.Task[FlawedJudgeData, vf.State, FlawedJudgeTaskConfig])
         return await judges[mode](self.config.judge).score(data, trace)
 
     @vf.reward(weight=1.0)
-    async def judge_score(self, trace: vf.Trace) -> float:
+    async def judge_score(self, trace: vf.Trace, runtime: vf.Runtime) -> float:
+        if self.config.reward == "true_correct":
+            return await self._verify(runtime, trace.last_reply or "")
         return await self._judge(trace, self.config.judge_mode)
 
     @vf.metric
