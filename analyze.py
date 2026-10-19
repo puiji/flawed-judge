@@ -18,8 +18,9 @@ from pathlib import Path
 
 
 def traces(run_dir: Path):
-    for line in open(run_dir / "traces.jsonl"):  # one line per attempt
-        episode = json.loads(line)
+    with open(run_dir / "traces.jsonl") as f:  # one line per attempt
+        episodes = [json.loads(line) for line in f]
+    for episode in episodes:
         for t in episode["traces"]:
             if t["ok"]:
                 yield episode["task"]["data"]["idx"], t

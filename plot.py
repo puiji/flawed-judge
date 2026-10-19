@@ -48,8 +48,7 @@ def main() -> None:
         ax.plot(NS, true, color=color, lw=2, marker="o", ms=4, label=label)
     gold = [[(r, r, t) for (_, r, t) in a] for a in base]
     oracle = [[(t, t, t) for (_, _, t) in a] for a in base]
-    ax.plot(NS, [t for _, t in curve(gold)], color=GOLD, lw=2, marker="o", ms=4,
-            label="gold-answer judge pick")
+    ax.plot(NS, [t for _, t in curve(gold)], color=GOLD, lw=2, marker="o", ms=4, label="gold-answer judge pick")
     ax.plot(NS, [t for _, t in curve(oracle)], color="#8a8985", lw=1.5, ls=":", label="oracle pass@n")
 
     ax.plot([], [], color="#52514e", lw=2, ls="--", label="dashed = judge's own score")

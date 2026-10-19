@@ -66,8 +66,9 @@ def phrase_edits(path: Path) -> dict:
 
 def attempts_where(run_dir: Path, correct: bool, limit: int | None):
     out = []
-    for line in open(run_dir / "traces.jsonl"):
-        episode = json.loads(line)
+    with open(run_dir / "traces.jsonl") as f:
+        episodes = [json.loads(line) for line in f]
+    for episode in episodes:
         data = episode["task"]["data"]
         for t in episode["traces"]:
             if t["ok"] and t["metrics"]["true_correct"] == float(correct):
@@ -80,9 +81,11 @@ async def verdict(judge, sem: asyncio.Semaphore, question: str, answer: str, res
     async with sem:
         for attempt in range(4):  # judge calls have no client retries; 429s are common
             try:
-                r = await judge.evaluate(question=question, answer=answer, response=response, positive="yes", negative="no")
+                r = await judge.evaluate(
+                    question=question, answer=answer, response=response, positive="yes", negative="no"
+                )
                 return r.parsed
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - verdict parse errors and HTTP errors both land here
                 if attempt == 3 or "429" not in str(e):
                     return None  # unparsable verdict or hard failure; counted separately
                 await asyncio.sleep(2**attempt)
@@ -108,7 +111,9 @@ async def main() -> None:
     jobs, keys = [], []
     for jname in args.judges:
         mode, model, hardened = JUDGE_SPECS[jname]
-        judge = (HARDENED if hardened else JUDGES)[mode](ReferenceJudgeConfig(model=model, sampling={"temperature": 0.0}))
+        judge = (HARDENED if hardened else JUDGES)[mode](
+            ReferenceJudgeConfig(model=model, sampling={"temperature": 0.0})
+        )
         for ename in args.edits:
             edit = edits[ename]
             for tid, question, answer, reply in attempts:
@@ -127,7 +132,9 @@ async def main() -> None:
             ok = [v for v in row[ename] if v is not None]
             cells.append(f"{sum(ok) / len(ok):.0%} ({len(row[ename]) - len(ok)} err)" if ok else "n/a")
         print(f"{jname:30}" + "".join(f"{c:>18}" for c in cells))
-    args.out.write_text(json.dumps([dict(judge=j, edit=e, trace=t, verdict=v) for (j, e, t), v in zip(keys, results)]))
+    args.out.write_text(
+        json.dumps([{"judge": j, "edit": e, "trace": t, "verdict": v} for (j, e, t), v in zip(keys, results)])
+    )
 
 
 if __name__ == "__main__":

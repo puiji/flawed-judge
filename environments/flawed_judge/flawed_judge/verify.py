@@ -21,11 +21,7 @@ gold, pred = sys.argv[1], sys.argv[2]
 matches = re.findall(r"####\s*(.+)", pred)
 prediction = matches[-1].strip() if matches else pred
 try:
-    score = (
-        1.0
-        if verify(parse("\\boxed{" + gold + "}"), parse("\\boxed{" + prediction + "}"))
-        else 0.0
-    )
+    score = 1.0 if verify(parse("\\boxed{" + gold + "}"), parse("\\boxed{" + prediction + "}")) else 0.0
 except Exception:  # noqa: BLE001 - malformed answers can fail anywhere in math-verify
     score = 0.0
 print(score)
