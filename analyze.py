@@ -62,7 +62,7 @@ def main() -> None:
     print(f"{'n':>3}  {'judge':>15}  {'judge (ref)':>15}  {'true accuracy':>15}  {'gap':>15}")
     n = 1
     while n <= r:
-        # ponytail: a task with fewer ok attempts than n uses all of them; fine while errors are rare
+        # A task with fewer ok attempts than n uses all of them; fine while errors are rare
         rows = [best_of(a, min(n, len(a))) for a in tasks]
         judge, ref, true = ([row[i] for row in rows] for i in range(3))
         gap = [j - t for j, t in zip(judge, true)]

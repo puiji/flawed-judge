@@ -1,4 +1,4 @@
-# Phase 2 smoke: 10 RL steps of Qwen3-0.6B against the no-reference Llama-3B judge.
+# RL smoke run: 10 RL steps of Qwen3-0.6B against the no-reference Llama-3B judge.
 # Measures step time and checks the env loads in prime-rl. On a 2-GPU pod, from prime-rl/:
 #   uv run rl @ /root/fj-smoke.toml --dry-run
 #   uv run rl @ /root/fj-smoke.toml

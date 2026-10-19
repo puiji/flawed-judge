@@ -1,4 +1,4 @@
-# Phase 2 arm: same judge, hardened prompt. 150 RL steps of Qwen3-0.6B, 128 rollouts per step. From prime-rl/:
+# RL arm: same judge, hardened prompt. 150 RL steps of Qwen3-0.6B, 128 rollouts per step. From prime-rl/:
 #   CUDA_VISIBLE_DEVICES=<pair> uv run rl @ /root/fj-harden.toml --run.name harden [port flags]
 max_steps = 150
 seq_len = 2048
