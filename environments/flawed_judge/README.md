@@ -12,8 +12,9 @@ GSM8K tasks scored by an LLM judge. The code-checked answer is logged alongside 
 
 Reward: `judge_score`, the judge verdict (0/1), or the code check when `task.reward = "true_correct"`. Metrics: `reference_judge` (the same judge shown the gold answer, one extra call per rollout) and `true_correct` (code check).
 
-The judge model defaults to verifiers' default. This repo's runs set `meta-llama/Llama-3.2-3B-Instruct` at temperature 0 (see `configs/eval/smoke.toml`).
+The judge model defaults to verifiers' default. The runs in [puiji/flawed-judge](https://github.com/puiji/flawed-judge) set `meta-llama/Llama-3.2-3B-Instruct` at temperature 0. Configs, results and plots are there too.
 
 ```bash
+# from a clone of the repo
 uv run vf-eval @ configs/eval/smoke.toml
 ```

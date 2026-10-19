@@ -1,6 +1,6 @@
 [project]
 name = "flawed-judge"
-version = "0.1.0"
+version = "0.1.1"
 description = "flawed-judge — GSM8K scored by an LLM judge, with code-checked truth logged alongside."
 requires-python = ">=3.11"
 license = "MIT"
