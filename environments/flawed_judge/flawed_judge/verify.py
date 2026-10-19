@@ -10,6 +10,8 @@ the eval process. Takes the gold answer (`argv[1]`) and the model's prediction
 The model is asked for its answer after '####'. Both the gold and the prediction
 are wrapped in \\boxed{} before math-verify (matching the math-env scorer) so
 parsing is robust; a malformed prediction fails to verify rather than crashing.
+
+Adapted from PrimeIntellect-ai/verifiers environments/gsm8k (MIT, Copyright (c) 2026 Prime Intellect).
 """
 
 import re
