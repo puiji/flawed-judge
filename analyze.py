@@ -56,6 +56,8 @@ def mean_ci(xs: list[float]) -> str:
 
 
 def main() -> None:
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
+        sys.exit(__doc__)
     tasks = load(*map(Path, sys.argv[1:3]))
     r = max(len(a) for a in tasks)
     print(f"{len(tasks)} tasks, {min(len(a) for a in tasks)}-{r} ok attempts each\n")

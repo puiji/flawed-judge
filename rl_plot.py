@@ -4,6 +4,7 @@
 
 True accuracy is format-lenient: the code check, or a \\boxed{} number equal to the gold answer.
 Means are over every rollout of a step, including no-signal groups the trainer discarded.
+A label starting with "control" plots no judge line, since that arm's reward is the code check.
 """
 
 import argparse
@@ -14,7 +15,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-COLORS = ["#2a78d6", "#eb6834", "#1baf7a"]  # reference palette slots 1, 2, and the plot.py GOLD
+COLORS = ["#2a78d6", "#eb6834", "#1baf7a"]  # fixed color per arm
 
 
 def per_step(run: Path) -> dict[int, tuple[float, float, float]]:
@@ -39,7 +40,7 @@ def per_step(run: Path) -> dict[int, tuple[float, float, float]]:
         a[1] += score
         a[2] += strict
         a[3] += bool(strict or boxed)
-    # Rollouts in flight when a run is stopped land on steps that never trained; drop those thin tails.
+    # Drop thin steps (< 64 rollouts), mostly rollouts still in flight when a run was stopped.
     return {s: (j / n, st / n, le / n) for s, (n, j, st, le) in sorted(acc.items()) if n >= 64}
 
 

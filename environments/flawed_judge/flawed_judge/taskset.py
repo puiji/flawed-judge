@@ -1,10 +1,10 @@
 """flawed-judge: GSM8K scored by an LLM judge, with code-checked truth logged alongside.
 
-The reward is a judge verdict. `judge_mode="reference"` shows the judge the gold answer
-(the control); `"no_reference"` only asks it whether the response is correct (the flawed
+The reward is a judge verdict. `judge_mode="reference"` shows the judge the gold answer; `"no_reference"` only asks it whether the response is correct (the flawed
 judge); `"solve_first"` has it solve the task first and uses its own answer as the reference.
-`true_correct` is the upstream gsm8k verifier, logged as a metric and never trained on,
-so judge reward minus `true_correct` is the gap the policy can exploit.
+`true_correct` is the upstream gsm8k verifier, logged as a metric (and used as the reward only
+when `reward="true_correct"`, the RL control), so judge reward minus `true_correct` is the gap
+the policy can exploit.
 
 The task prompt, dataset loading and `verify.py` are adapted from PrimeIntellect-ai/verifiers environments/gsm8k (MIT, Copyright (c) 2026 Prime Intellect).
 """

@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from analyze import best_of, load
 
 NS = [1, 2, 4, 8, 16]
-COLORS = ["#2a78d6", "#eb6834", "#6250d6"]  # one per judge, reference palette slots 1, 2, 7
+COLORS = ["#2a78d6", "#eb6834", "#6250d6"]  # fixed color per judge
 GOLD = "#1baf7a"
 
 

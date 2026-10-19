@@ -96,12 +96,13 @@ async def main() -> None:
     p.add_argument("run", type=Path)
     p.add_argument("--limit", type=int)
     p.add_argument("-c", "--concurrency", type=int, default=16)
-    p.add_argument("-o", "--out", type=Path, default=Path("results/probes.json"))
+    p.add_argument("-o", "--out", type=Path, default=Path("probes.json"))
     p.add_argument("--judges", nargs="*", default=list(JUDGE_SPECS), help="subset of JUDGE_SPECS names")
     p.add_argument("--edits", nargs="*", default=list(EDITS), help="subset of EDITS names")
     p.add_argument("--phrases", type=Path, help="file of appended-text edits, one per line (replaces EDITS)")
     p.add_argument("--correct", action="store_true", help="probe the right attempts instead of the wrong ones")
     args = p.parse_args()
+    args.out.parent.mkdir(parents=True, exist_ok=True)
 
     edits = phrase_edits(args.phrases) if args.phrases else EDITS
     if args.phrases:
